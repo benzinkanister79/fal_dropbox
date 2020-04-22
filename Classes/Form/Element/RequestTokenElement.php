@@ -1,6 +1,6 @@
 <?php
 declare(strict_types = 1);
-namespace SFroemken\FalDropbox\Tca;
+namespace SFroemken\FalDropbox\Form\Element;
 
 /*
  * This file is part of the TYPO3 CMS project.
@@ -17,62 +17,49 @@ namespace SFroemken\FalDropbox\Tca;
 
 use Kunnu\Dropbox\Dropbox;
 use Kunnu\Dropbox\DropboxApp;
+use TYPO3\CMS\Backend\Form\Element\AbstractFormElement;
 use TYPO3\CMS\Core\Service\FlexFormService;
+use TYPO3\CMS\Core\Utility\ArrayUtility;
+use TYPO3\CMS\Core\Utility\Exception\MissingArrayPathException;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
 /**
  * This class retrieves and shows Dropbox Account information
  */
-class RequestToken
+class RequestTokenElement extends AbstractFormElement
 {
     /**
-     * @var array
+     * Form Element to request a Dropbox Token
      */
-    protected $parentArray = [];
-
-    /**
-     * initializes this object
-     *
-     * @param array $parentArray
-     */
-    protected function initialize(array $parentArray)
+    public function render()
     {
-        $this->parentArray = $parentArray;
-    }
-
-    /**
-     * get requestToken
-     *
-     * @param array $parentArray
-     * @param object $formEngine
-     * @return string
-     */
-    public function getRequestToken($parentArray, $formEngine): string
-    {
-        $this->initialize($parentArray);
-        if (is_string($parentArray['row']['configuration'])) {
-            /** @var FlexFormService $flexFormService */
-            $flexFormService = GeneralUtility::makeInstance(FlexFormService::class);
-            $config = $flexFormService->convertFlexFormContentToArray($parentArray['row']['configuration']);
-        } else {
-            $config = [];
-            foreach ($parentArray['row']['configuration']['data']['sDEF']['lDEF'] as $key => $value) {
-                $config[$key] = $value['vDEF'];
-            }
+        try {
+            $flexFormFields = ArrayUtility::getValueByPath(
+                $this->data,
+                'databaseRow/configuration/data/sDEF/lDEF'
+            );
+        } catch (MissingArrayPathException $e) {
+            return 'Path databaseRow/configuration/data/sDEF/lDEF can not be extracted from TCA array';
         }
-        return $this->getHtmlForConnected($config['accessToken']);
+
+        $config = [];
+        foreach ($flexFormFields as $key => $value) {
+            $config[$key] = $value['vDEF'];
+        }
+        return [
+            'html' => $this->getHtmlForConnected($config['accessToken'])
+        ];
     }
 
     /**
-     * get HTML to show the user, that he is connected with his dropbox account
+     * Get HTML to show the user, that he is connected with its dropbox account
      *
      * @param string $accessToken
      * @return string
      */
-    public function getHtmlForConnected($accessToken): string
+    public function getHtmlForConnected(string $accessToken): string
     {
-        /** @var \TYPO3\CMS\Fluid\View\StandaloneView $view */
         $view = GeneralUtility::makeInstance(StandaloneView::class);
         $view->setTemplatePathAndFilename(
             GeneralUtility::getFileAbsFileName(
@@ -81,9 +68,7 @@ class RequestToken
         );
 
         try {
-            /** @var DropboxApp $dropboxClient */
             $dropboxApp = GeneralUtility::makeInstance(DropboxApp::class, '', '',  $accessToken);
-            /** @var Dropbox $dropbox */
             $dropbox = GeneralUtility::makeInstance(Dropbox::class, $dropboxApp);
             $view->assign('account', $dropbox->getCurrentAccount());
             $view->assign('quota', $dropbox->getSpaceUsage());

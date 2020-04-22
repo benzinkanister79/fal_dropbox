@@ -19,6 +19,13 @@ call_user_func(function () {
         'groups' => []
     ];
 
+    // Register a node in ext_localconf.php
+    $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1587575410] = [
+        'nodeName' => 'getRequestToken',
+        'priority' => 40,
+        'class' => SFroemken\FalDropbox\Form\Element\RequestTokenElement::class
+    ];
+
     // Add wizard/control to access_token in XML structure
     $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1552228283] = [
         'nodeName' => 'accessToken',
